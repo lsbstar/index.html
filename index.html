@@ -35,13 +35,17 @@
   label.field-label .req{ color:var(--danger); margin-left:2px; }
   input[type=text], input[type=tel]{ width:100%; padding:8px 4px; font-size:15px; border:none; border-bottom:1px solid var(--border); outline:none; background:transparent; color:var(--text); }
   input[type=text]:focus, input[type=tel]:focus{ border-bottom:2px solid var(--purple); padding-bottom:7px; }
+  input[type=tel]:disabled{ background:#f1f1f1; color:#aaa; border-bottom:1px solid #e5e5e5; }
   .disabled-field{ background:#f8f8f8; padding:8px 10px; border-radius:4px; color:var(--muted); font-size:15px; border:1px solid #eee; }
   .date-row{ display:flex; gap:10px; }
   .date-row select{ flex:1; padding:9px 6px; font-size:14px; border:1px solid var(--border); border-radius:4px; background:white; color:var(--text); }
   .date-labels{ display:flex; gap:10px; margin-top:4px; }
   .date-labels span{ flex:1; text-align:center; font-size:11px; color:var(--muted); }
+  .no-phone-row{ display:flex; align-items:center; gap:10px; margin-top:16px; padding:12px 14px; background:#f8f7fc; border:1px solid var(--border); border-radius:6px; cursor:pointer; }
+  .no-phone-row input[type=checkbox]{ width:22px; height:22px; accent-color:var(--purple); cursor:pointer; flex-shrink:0; }
+  .no-phone-row span{ font-size:14px; color:var(--text); }
   .error-msg{ color:var(--danger); font-size:12px; margin-top:6px; display:none; }
-  .field-card.invalid input, .field-card.invalid select{ border-color:var(--danger) !important; }
+  .field-card.invalid input[type=text], .field-card.invalid input[type=tel], .field-card.invalid select{ border-color:var(--danger) !important; }
   .field-card.invalid .error-msg{ display:block; }
   .submit-row{ display:flex; justify-content:flex-end; align-items:center; gap:12px; padding:0 4px; }
   .submit-btn{ background:var(--purple); color:white; border:none; padding:10px 28px; font-size:14px; border-radius:6px; cursor:pointer; font-weight:500; }
@@ -92,7 +96,11 @@
     <div class="field-card" id="phoneCard">
       <label class="field-label">휴대전화번호 <span class="req">*</span></label>
       <input type="tel" id="phoneInput" placeholder="답을 입력하세요" />
-      <div class="error-msg">휴대전화번호를 입력해 주세요.</div>
+      <label class="no-phone-row" for="noPhoneCheck">
+        <input type="checkbox" id="noPhoneCheck" onchange="toggleNoPhone()" />
+        <span>개인 휴대전화번호가 없습니다 (없음)</span>
+      </label>
+      <div class="error-msg">휴대전화번호를 입력하거나, '없음'을 체크해 주세요.</div>
     </div>
 
     <div class="submit-row">
@@ -123,6 +131,8 @@
   const yearSelect = document.getElementById('yearSelect');
   const monthSelect = document.getElementById('monthSelect');
   const daySelect = document.getElementById('daySelect');
+  const phoneInput = document.getElementById('phoneInput');
+  const noPhoneCheck = document.getElementById('noPhoneCheck');
 
   function fillSelect(el, start, end, placeholder){
     const optDefault = document.createElement('option');
@@ -142,6 +152,19 @@
 
   function pad2(n){ return String(n).padStart(2,'0'); }
 
+  // '없음' 체크 시 번호 입력칸 잠그기
+  function toggleNoPhone(){
+    if(noPhoneCheck.checked){
+      phoneInput.value = '';
+      phoneInput.disabled = true;
+      phoneInput.placeholder = '없음';
+      document.getElementById('phoneCard').classList.remove('invalid');
+    }else{
+      phoneInput.disabled = false;
+      phoneInput.placeholder = '답을 입력하세요';
+    }
+  }
+
   function clearInvalid(){
     document.querySelectorAll('.field-card').forEach(c=>c.classList.remove('invalid'));
   }
@@ -150,12 +173,12 @@
     clearInvalid();
     let ok = true;
     const name = document.getElementById('nameInput').value.trim();
-    const phone = document.getElementById('phoneInput').value.trim();
+    const phone = phoneInput.value.trim();
     const y = yearSelect.value, m = monthSelect.value, d = daySelect.value;
 
     if(!name){ document.getElementById('nameCard').classList.add('invalid'); ok = false; }
     if(!y || !m || !d){ document.getElementById('birthCard').classList.add('invalid'); ok = false; }
-    if(!phone){ document.getElementById('phoneCard').classList.add('invalid'); ok = false; }
+    if(!noPhoneCheck.checked && !phone){ document.getElementById('phoneCard').classList.add('invalid'); ok = false; }
     return ok;
   }
 
@@ -170,7 +193,7 @@
     const data = {
       name: document.getElementById('nameInput').value.trim(),
       birth: `${yearSelect.value}-${pad2(monthSelect.value)}-${pad2(daySelect.value)}`,
-      phone: document.getElementById('phoneInput').value.trim()
+      phone: noPhoneCheck.checked ? '없음' : phoneInput.value.trim()
     };
 
     try{
@@ -192,7 +215,10 @@
 
   function resetForm(){
     document.getElementById('nameInput').value = '';
-    document.getElementById('phoneInput').value = '';
+    phoneInput.value = '';
+    noPhoneCheck.checked = false;
+    phoneInput.disabled = false;
+    phoneInput.placeholder = '답을 입력하세요';
     yearSelect.value = ''; monthSelect.value = ''; daySelect.value = '';
     clearInvalid();
     document.getElementById('statusMsg').textContent = '';
